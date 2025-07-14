@@ -1,26 +1,25 @@
-import sqlite3
+# grafik.py
 import matplotlib.pyplot as plt
 from datetime import datetime
 from telegram import Update
 from telegram.constants import ChatAction
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler
 from io import BytesIO
+from services.database import c  # GANTI: pakai cursor dari services
 
 async def grafik(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    conn = sqlite3.connect("keuangan.db")
-    c = conn.cursor()
 
     c.execute("""
-        SELECT DATE(timestamp), SUM(CASE WHEN type='pemasukan' THEN amount ELSE 0 END),
-               SUM(CASE WHEN type='pengeluaran' THEN amount ELSE 0 END)
+        SELECT DATE(timestamp), 
+               SUM(CASE WHEN type='masuk' THEN amount ELSE 0 END),
+               SUM(CASE WHEN type='keluar' THEN amount ELSE 0 END)
         FROM transactions
         WHERE user_id = ?
         GROUP BY DATE(timestamp)
         ORDER BY DATE(timestamp)
     """, (user_id,))
     data = c.fetchall()
-    conn.close()
 
     if not data:
         target = update.message or update.callback_query.message
@@ -50,5 +49,4 @@ async def grafik(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await target.chat.send_action(action=ChatAction.UPLOAD_PHOTO)
     await target.reply_photo(photo=buffer)
 
-from telegram.ext import CommandHandler
 grafik_cmd = CommandHandler("grafik", grafik)
