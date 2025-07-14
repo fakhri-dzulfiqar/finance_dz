@@ -1,0 +1,5 @@
+.env
+keuangan.db
+__pycache__/
+*.pyc
+.env.*
