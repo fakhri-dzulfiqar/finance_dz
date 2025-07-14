@@ -1,16 +1,18 @@
 import sqlite3
 from telegram import Update
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler
 
 async def ringkasan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     conn = sqlite3.connect("keuangan.db")
     c = conn.cursor()
 
-    c.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'pemasukan'", (user_id,))
+    # ✅ Ganti 'pemasukan' -> 'masuk'
+    c.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'masuk'", (user_id,))
     total_pemasukan = c.fetchone()[0] or 0
 
-    c.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'pengeluaran'", (user_id,))
+    # ✅ Ganti 'pengeluaran' -> 'keluar'
+    c.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'keluar'", (user_id,))
     total_pengeluaran = c.fetchone()[0] or 0
 
     total = total_pemasukan - total_pengeluaran
@@ -27,5 +29,4 @@ async def ringkasan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target = update.message or update.callback_query.message
     await target.reply_text(message, parse_mode="Markdown")
 
-from telegram.ext import CommandHandler
 ringkasan_cmd = CommandHandler("ringkasan", ringkasan)
