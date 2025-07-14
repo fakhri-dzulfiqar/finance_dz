@@ -1,14 +1,7 @@
-# --- File: model/kategori.py ---
-KATEGORI_MAP = {
-    'gaji': 'Gaji',
-    'parkir': 'Transportasi',
-    'makan': 'Makanan',
-    'bensin': 'Transportasi',
-    'listrik': 'Tagihan',
-    'air': 'Tagihan',
-    'jajan': 'Makanan',
-    'internet': 'Tagihan',
-    'belanja': 'Belanja',
-    'sedekah': 'Donasi',
-    'zakat': 'Donasi'
-}
+KATEGORI_PEMASUKAN = [
+    "Gaji", "Transfer", "Bonus", "THR", "Hibah", "Pendapatan", "Uang Masuk"
+]
+
+KATEGORI_PENGELUARAN = [
+    "Belanja", "Makan", "Transportasi", "Listrik", "Air", "Pulsa", "Token", "Internet", "Kesehatan", "Pendidikan", "Hadiah", "Donasi"
+]
