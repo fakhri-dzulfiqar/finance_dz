@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from model.kategori import KATEGORI_PEMASUKAN
 
-def parse_transaksi(text):
+def parse_transaction(text):
     hasil = []
     baris_list = text.strip().split('\n')
     
