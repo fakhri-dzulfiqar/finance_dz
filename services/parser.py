@@ -1,37 +1,51 @@
-# --- File: services/parser.py ---
 import re
 from datetime import datetime
-from services.database import insert_transaction, get_summary_message
+from model.kategori import KATEGORI_PEMASUKAN, KATEGORI_PENGELUARAN
 
-def parse_amount(text):
-    return int(text.replace('.', '').replace(',', '').strip())
+def parse_transaksi(text):
+    hasil = []
+    baris_list = text.strip().split('\n')
+    tanggal_sekarang = datetime.now().strftime("%d %B")
 
-def parse_transaction(user_id, text):
-    if text.lower().startswith("pemasukan"):
-        match = re.match(r"Pemasukan\s+([\d\.,]+)\s+(.+?)(?:\s+via\s+(\w+))?$", text, re.IGNORECASE)
+    for baris in baris_list:
+        baris = baris.strip()
+        if not baris:
+            continue
+
+        # Format lengkap: "14 Juli 100000 Parkir dari Cash"
+        match = re.match(r"^(\d{1,2} \w+) (\d+[.,]?\d*) (.+)", baris)
         if match:
-            amount = parse_amount(match.group(1))
-            desc = match.group(2)
-            source = match.group(3) or "Unknown"
-            insert_transaction(user_id, 'masuk', amount, desc, source)
-            return f"✅ Pemasukan *Rp{amount:,}* dari *{source}* dicatat:\n_{desc}_\n\n" + get_summary_message(user_id)
-        return "Format salah. Contoh: `Pemasukan 1.000.000 Gaji via BRI`"
-
-    match = re.match(r"(\d{1,2})\s*(\w+)?\s+([\d\.,]+)\s+(.+?)(?:\s+dari\s+(\w+))?$", text, re.IGNORECASE)
-    if match:
-        day = int(match.group(1))
-        month_text = match.group(2)
-        amount = parse_amount(match.group(3))
-        desc = match.group(4)
-        source = match.group(5) or "Unknown"
-        try:
-            if month_text:
-                date = datetime.strptime(f"{day} {month_text}", "%d %B").replace(year=datetime.now().year)
+            tanggal, jumlah, keterangan = match.groups()
+        else:
+            # Format tanpa tanggal: "100000 Parkir dari Cash"
+            match2 = re.match(r"^(\d+[.,]?\d*) (.+)", baris)
+            if match2:
+                tanggal = tanggal_sekarang
+                jumlah, keterangan = match2.groups()
             else:
-                date = datetime.now().replace(day=day)
-        except:
-            date = datetime.now()
-        insert_transaction(user_id, 'keluar', amount, desc, source, date)
-        return f"❌ Pengeluaran *Rp{amount:,}* dari *{source}* dicatat:\n_{desc}_\n\n" + get_summary_message(user_id)
+                # Format terbalik: "Parkir dari Cash 100000"
+                match3 = re.match(r"^(.+) (\d+[.,]?\d*)$", baris)
+                if match3:
+                    keterangan, jumlah = match3.groups()
+                    tanggal = tanggal_sekarang
+                else:
+                    # Tidak dikenali
+                    continue
 
-    return "📝 Format tidak dikenali.\nContoh:\n`Pemasukan 1.000.000 Gaji via BCA`\n`14 Juli 10.000 Parkir dari Cash`"
+        jumlah = int(str(jumlah).replace('.', '').replace(',', ''))
+
+        # Deteksi otomatis jenis berdasarkan kata kunci
+        lower_ket = keterangan.lower()
+        if any(kw in lower_ket for kw in KATEGORI_PEMASUKAN):
+            kategori = "Pemasukan"
+        else:
+            kategori = "Pengeluaran"
+
+        hasil.append({
+            "tanggal": tanggal,
+            "kategori": kategori,
+            "jumlah": jumlah,
+            "keterangan": keterangan.strip()
+        })
+
+    return hasil
