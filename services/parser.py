@@ -1,42 +1,28 @@
 import re
 from datetime import datetime
-from model.kategori import KATEGORI_PEMASUKAN, KATEGORI_PENGELUARAN
+from model.kategori import KATEGORI_PEMASUKAN
 
 def parse_transaksi(text):
     hasil = []
     baris_list = text.strip().split('\n')
-    tanggal_sekarang = datetime.now().strftime("%d %B")
-
+    
     for baris in baris_list:
         baris = baris.strip()
         if not baris:
             continue
 
-        # Format lengkap: "14 Juli 100000 Parkir dari Cash"
-        match = re.match(r"^(\d{1,2} \w+) (\d+[.,]?\d*) (.+)", baris)
-        if match:
-            tanggal, jumlah, keterangan = match.groups()
-        else:
-            # Format tanpa tanggal: "100000 Parkir dari Cash"
-            match2 = re.match(r"^(\d+[.,]?\d*) (.+)", baris)
-            if match2:
-                tanggal = tanggal_sekarang
-                jumlah, keterangan = match2.groups()
-            else:
-                # Format terbalik: "Parkir dari Cash 100000"
-                match3 = re.match(r"^(.+) (\d+[.,]?\d*)$", baris)
-                if match3:
-                    keterangan, jumlah = match3.groups()
-                    tanggal = tanggal_sekarang
-                else:
-                    # Tidak dikenali
-                    continue
+        # Cocokkan format seperti: "14 Juli 123456 Keterangan"
+        match = re.match(r"^(\d{1,2} \w+)\s+(\d{3,}|\d+[.,]?\d*)\s+(.+)$", baris)
+        if not match:
+            continue
 
+        tanggal, jumlah, keterangan = match.groups()
+
+        # Bersihkan jumlah dari titik/koma
         jumlah = int(str(jumlah).replace('.', '').replace(',', ''))
 
-        # Deteksi otomatis jenis berdasarkan kata kunci
-        lower_ket = keterangan.lower()
-        if any(kw in lower_ket for kw in KATEGORI_PEMASUKAN):
+        # Deteksi apakah termasuk pemasukan atau pengeluaran
+        if any(keyword.lower() in keterangan.lower() for keyword in KATEGORI_PEMASUKAN):
             kategori = "Pemasukan"
         else:
             kategori = "Pengeluaran"
